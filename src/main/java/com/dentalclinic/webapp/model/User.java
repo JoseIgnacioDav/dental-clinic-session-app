@@ -16,7 +16,7 @@ public class User {
     @Column(nullable = false)
     private String firstnames;
     @Column(nullable = false)
-    private String Surname;
+    private String surname;
     @Column(nullable = false, unique = true)
     private String email;
     @Column(nullable = false)
@@ -54,11 +54,11 @@ public class User {
     }
 
     public String getSurname() {
-        return Surname;
+        return surname;
     }
 
     public void setSurname(String surname) {
-        Surname = surname;
+        this.surname = surname;
     }
 
     public String getEmail() {
