@@ -1,5 +1,6 @@
 package com.dentalclinic.webapp.service;
 
+import com.dentalclinic.webapp.dto.request.auth.LoginRequestDTO;
 import com.dentalclinic.webapp.dto.request.user.UserRequestDTO;
 import com.dentalclinic.webapp.dto.response.user.UserResponseDTO;
 import com.dentalclinic.webapp.model.User;
@@ -32,10 +33,10 @@ public class UserService {
         receivedUser.setPassword(receiveduserdto.getPassword());
 
         // check if the user already exists
-        Optional queryDbSocialSecNum = userRepository.findBySocialsecuritynumber(receivedUser.getSocialsecuritynumber());
-        Optional queryDbEmail = userRepository.findByEmail(receivedUser.getEmail());
+        Optional queryDbSocialSecNumOPT = userRepository.findBySocialsecuritynumber(receivedUser.getSocialsecuritynumber());
+        Optional queryDbEmailOPT = userRepository.findByEmail(receivedUser.getEmail());
 
-        if(queryDbEmail.isPresent()||queryDbSocialSecNum.isPresent()){
+        if(queryDbEmailOPT.isPresent()||queryDbSocialSecNumOPT.isPresent()){
             throw new RuntimeException("The user already exists");
         }
         //this ciphers the password(bcrypt)
@@ -56,5 +57,32 @@ public class UserService {
         secureUserReturn.setRole(receivedUser.getRole());
 
         return secureUserReturn;
+    }
+    // safe dtos to return and get information
+    public UserResponseDTO login (LoginRequestDTO credentials){
+        Optional<User> queryDbEmailOPT = userRepository.findByEmail(credentials.getEmail());
+
+        //check if the user exists already in the db. if so we check if it matches the password
+        if(queryDbEmailOPT.isEmpty()){
+            throw new RuntimeException("The user does not exist");
+        }
+        User queriedUser = queryDbEmailOPT.get();
+        if(!passwordEncoder.matches(credentials.getPassword(), queriedUser.getPassword())){
+            throw new RuntimeException("The user does not exist"); // to avoid bruteforcing
+
+        }
+
+        // if it matches we return the safe DTO
+        User user = queriedUser;
+        UserResponseDTO secureUserReturn = new UserResponseDTO();
+        secureUserReturn.setId(user.getId());
+        secureUserReturn.setFirstnames(user.getFirstnames());
+        secureUserReturn.setSurname(user.getSurname());
+        secureUserReturn.setEmail(user.getEmail());
+        secureUserReturn.setSocialsecuritynumber(user.getSocialsecuritynumber());
+        secureUserReturn.setRole(user.getRole());
+
+        return secureUserReturn;
+
     }
 }
