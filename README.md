@@ -1,0 +1,2 @@
+# dental-clinic-session-app (HttpSession Version)
+This is a secure web application built with Java and Springboot for managing a dental clinic: appointments, patients, and staff. In this version, I use server-side state management with HttpSession,  I am going to develop a JWT version soon!
