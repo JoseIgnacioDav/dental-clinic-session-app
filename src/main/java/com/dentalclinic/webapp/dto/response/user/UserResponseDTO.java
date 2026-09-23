@@ -1,6 +1,6 @@
 package com.dentalclinic.webapp.dto.response.user;
 
-public class UserCreatedDTO {
+public class UserResponseDTO {
     //used to show only this information when the user registers
     private Long id;
     private String socialsecuritynumber;
@@ -9,7 +9,7 @@ public class UserCreatedDTO {
     private String email;
     private String role;
 
-    public UserCreatedDTO(){}
+    public UserResponseDTO(){}
 
     public Long getId() {
         return id;
