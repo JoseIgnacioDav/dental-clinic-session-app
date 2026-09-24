@@ -3,8 +3,10 @@ package com.dentalclinic.webapp.controller;
 import com.dentalclinic.webapp.dto.request.appointment.AppointmentRequestDTO;
 import com.dentalclinic.webapp.dto.response.appointment.*;
 import com.dentalclinic.webapp.dto.response.user.UserResponseDTO;
+import com.dentalclinic.webapp.model.Role;
 import com.dentalclinic.webapp.service.AppointmentService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +27,7 @@ public class AppointmentController {
 
     // Create appointment endpoint
     @PostMapping("/create")
-    public ResponseEntity<AppointmentResponseDTO> createAppointment(@RequestBody AppointmentRequestDTO requestDTO, HttpSession session) {
+    public ResponseEntity<AppointmentResponseDTO> createAppointment(@Valid @RequestBody AppointmentRequestDTO requestDTO, HttpSession session) {
         UserResponseDTO loggedUser = (UserResponseDTO) session.getAttribute("loggedUser");
         if (loggedUser == null) {
             throw new RuntimeException("Unauthorized: No active session");
@@ -53,12 +55,12 @@ public class AppointmentController {
             HttpSession session) {
 
         UserResponseDTO loggedUser = (UserResponseDTO) session.getAttribute("loggedUser");
-        if (loggedUser == null || (!loggedUser.getRole().equalsIgnoreCase("DOCTOR") && !loggedUser.getRole().equalsIgnoreCase("ADMIN"))) {
+        if (loggedUser == null || (!(loggedUser.getRole()== Role.DOCTOR) && !(loggedUser.getRole()== Role.ADMIN))) {
             throw new RuntimeException("Access Denied");
         }
 
         // If DOCTOR, force their own ID
-        if (loggedUser.getRole().equalsIgnoreCase("DOCTOR")) {
+        if (loggedUser.getRole() == Role.DOCTOR) {
             doctorId = loggedUser.getId();
         }
 
