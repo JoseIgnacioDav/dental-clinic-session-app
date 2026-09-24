@@ -1,8 +1,14 @@
 package com.dentalclinic.webapp.dto.request.auth;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+
 public class LoginRequestDTO {
-    String email;
-    String password;
+    @NotBlank(message = "Email is required")
+    @Email
+    private String email;
+    @NotBlank
+    private String password;
 
     public LoginRequestDTO(){}
 
