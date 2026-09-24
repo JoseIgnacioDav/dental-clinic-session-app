@@ -3,7 +3,7 @@ package com.dentalclinic.webapp.dto.response.appointment;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-public class AppointmentResponse {
+public class AppointmentResponseDTO {
     private Long id;
     private LocalDate date;
     private LocalTime time;
@@ -11,7 +11,7 @@ public class AppointmentResponse {
     private String doctornames;
     private String patientnames;
 
-    public AppointmentResponse(){}
+    public AppointmentResponseDTO(){}
 
     public Long getId() {
         return id;
