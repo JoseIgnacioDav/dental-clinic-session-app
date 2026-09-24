@@ -2,12 +2,15 @@ package com.dentalclinic.webapp.service;
 
 import com.dentalclinic.webapp.dto.request.appointment.AppointmentRequestDTO;
 import com.dentalclinic.webapp.dto.response.appointment.AppointmentResponseDTO;
+import com.dentalclinic.webapp.dto.response.appointment.PatientScheduledAppointmentsDTO;
 import com.dentalclinic.webapp.model.Appointment;
 import com.dentalclinic.webapp.model.User;
 import com.dentalclinic.webapp.repository.AppointmentRepository;
 import com.dentalclinic.webapp.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -92,6 +95,24 @@ public class AppointmentService {
         }
         return  safeAppointmentDTO;
 
+    }
+    public List<PatientScheduledAppointmentsDTO>getPAtientScheduledAppointments(Long id){
+        List<Appointment>exposedAppointments = appointmentRepository.findAppointmentByPatient_Id(id);
+        List<PatientScheduledAppointmentsDTO> safeAppointments = new ArrayList<>();
+        for(Appointment exposedAppointment : exposedAppointments){
+            PatientScheduledAppointmentsDTO safeAppointment = new PatientScheduledAppointmentsDTO();
+            if(exposedAppointment.getDoctor() != null){
+                safeAppointment.setDoctorName(exposedAppointment.getDoctor().getFirstnames()+" " + exposedAppointment.getDoctor().getSurname());
+            }else {
+                safeAppointment.setDoctorName("Unasigned");
+            }
+            safeAppointment.setTime(exposedAppointment.getTime());
+            safeAppointment.setDate(exposedAppointment.getDate());
+            safeAppointment.setStatus(exposedAppointment.getStatus());
+            safeAppointment.setId(exposedAppointment.getId());
+            safeAppointments.add(safeAppointment);
+        }
+        return safeAppointments;
     }
 
 
