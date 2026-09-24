@@ -182,7 +182,21 @@ public class AppointmentService {
         return safeList;
     }
 
-
+    public List<ListDoctorsDTO>listdoctors(){
+        List<ListDoctorsDTO>safeList = new ArrayList<>();
+        String role = "DOCTOR";
+        List<User>exposedList = userRepository.findByRole(role);
+        if(exposedList.isEmpty()){
+            throw new RuntimeException("There are no Doctors");
+        }
+        for(User exposedDoctor : exposedList){
+            ListDoctorsDTO dto = new ListDoctorsDTO();
+            dto.setDoctorId(exposedDoctor.getId());
+            dto.setNames(exposedDoctor.getFirstnames()+" "+ exposedDoctor.getSurname());
+            safeList.add(dto);
+        }
+        return safeList;
+    }
 
 
 }
