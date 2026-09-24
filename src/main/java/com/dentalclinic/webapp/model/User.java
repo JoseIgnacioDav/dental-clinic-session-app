@@ -25,7 +25,8 @@ public class User {
     // patient set as default
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     @Column (nullable = false)
-    private String role = "PATIENT"; // it's really important to keep this protected
+    @Enumerated(EnumType.STRING)
+    private Role role = Role.PATIENT; // it's really important to keep this protected
 
     public User(){}
 
@@ -77,7 +78,7 @@ public class User {
         this.password = password;
     }
 
-    public String getRole() { // only a getter
+    public Role getRole() { // only a getter
         return role;
     }
 }
