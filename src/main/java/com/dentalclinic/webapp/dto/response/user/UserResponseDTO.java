@@ -1,5 +1,7 @@
 package com.dentalclinic.webapp.dto.response.user;
 
+import com.dentalclinic.webapp.model.Role;
+
 public class UserResponseDTO {
     //used to show only this information when the user registers
     private Long id;
@@ -7,7 +9,7 @@ public class UserResponseDTO {
     private String firstnames;
     private String surname;
     private String email;
-    private String role;
+    private Role role;
 
     public UserResponseDTO(){}
 
@@ -51,11 +53,11 @@ public class UserResponseDTO {
         this.email = email;
     }
 
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 }
