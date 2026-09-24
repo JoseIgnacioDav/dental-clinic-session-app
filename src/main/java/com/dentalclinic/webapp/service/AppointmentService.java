@@ -1,6 +1,7 @@
 package com.dentalclinic.webapp.service;
 
 import com.dentalclinic.webapp.dto.request.appointment.AppointmentRequestDTO;
+import com.dentalclinic.webapp.dto.response.appointment.AppointmentConfidentialResponseDTO;
 import com.dentalclinic.webapp.dto.response.appointment.AppointmentResponseDTO;
 import com.dentalclinic.webapp.dto.response.appointment.PatientScheduledAppointmentsDTO;
 import com.dentalclinic.webapp.model.Appointment;
@@ -9,6 +10,7 @@ import com.dentalclinic.webapp.repository.AppointmentRepository;
 import com.dentalclinic.webapp.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -115,6 +117,54 @@ public class AppointmentService {
         }
         return safeAppointments;
     }
+    /* Return Doctor assigned Appointments incluiding patient confidential information on a given date */
+    public List<AppointmentConfidentialResponseDTO> getDoctorsAssignedAppointments(Long doctorId, LocalDate date){
+        List<Appointment>appointments = appointmentRepository.findByDoctorAndDate(doctorId,date);
+        //Clean and safe list
+        List<AppointmentConfidentialResponseDTO>safelist = new ArrayList<>();
+
+        for (Appointment exposedAppointment : appointments){
+            AppointmentConfidentialResponseDTO dto = new AppointmentConfidentialResponseDTO();
+            dto.setId(exposedAppointment.getId());
+            dto.setDate(exposedAppointment.getDate());
+            dto.setTime(exposedAppointment.getTime());
+            dto.setStatus(exposedAppointment.getStatus());
+
+            //validations
+            if (exposedAppointment.getDoctor()!= null){
+                dto.setDoctorNames(exposedAppointment.getDoctor().getFirstnames()+" "+exposedAppointment.getDoctor().getSurname());
+            }else {
+                dto.setDoctorNames("Unassigned Doctor Name");
+            }
+
+            if(exposedAppointment.getPatient() != null){
+                dto.setPatientNames(exposedAppointment.getPatient().getFirstnames()+" "+ exposedAppointment.getPatient().getSurname());
+            }else {
+                dto.setPatientNames("Unassigned Patient Name");
+            }
+            if (exposedAppointment.getPatient() != null) {
+                if (exposedAppointment.getPatient().getEmail() != null) {
+                    dto.setPatientEmail(exposedAppointment.getPatient().getEmail());
+                } else {
+                    dto.setPatientEmail(""); // if the patient is null
+                }
+
+                if (exposedAppointment.getPatient().getSocialsecuritynumber() != null){
+                    dto.setPatientSocialSecurityNumber(exposedAppointment.getPatient().getSocialsecuritynumber());
+                } else {
+                    dto.setPatientSocialSecurityNumber("");
+                }
+            } else {
+                dto.setPatientEmail("");
+                dto.setPatientSocialSecurityNumber("");
+            }
+
+            safelist.add(dto);
+        }
+        return safelist;
+    }
+
+
 
 
 
