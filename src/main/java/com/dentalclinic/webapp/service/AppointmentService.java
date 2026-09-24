@@ -3,25 +3,27 @@ package com.dentalclinic.webapp.service;
 import com.dentalclinic.webapp.dto.request.appointment.AppointmentRequestDTO;
 import com.dentalclinic.webapp.dto.response.appointment.*;
 import com.dentalclinic.webapp.dto.response.user.UserResponseDTO;
+import com.dentalclinic.webapp.exception.AccessDeniedException;
+import com.dentalclinic.webapp.exception.BusinessException;
 import com.dentalclinic.webapp.model.Appointment;
 import com.dentalclinic.webapp.model.Role;
 import com.dentalclinic.webapp.model.User;
 import com.dentalclinic.webapp.repository.AppointmentRepository;
 import com.dentalclinic.webapp.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.security.PublicKey;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final UserRepository userRepository;
 
+    private static final Set<String> ALLOWED_STATUSES = Set.of(
+            "PENDING","CONFIRMED","COMPLETED","CANCELLED"
+    );
 
     public AppointmentService(AppointmentRepository appointmentRepository, UserRepository userRepository){
         this.appointmentRepository = appointmentRepository;
@@ -202,18 +204,24 @@ public class AppointmentService {
     }
 
 
+    @Transactional
     public AppointmentResponseDTO updateStatus(Long appointmentID, String newStatus, UserResponseDTO userSession){
+       //validate session
         if(userSession == null || userSession.getRole() == null){
             throw new RuntimeException("Access Denied");
         }
-
+        //Only Admins and Doctors can change the status
         if(!(userSession.getRole() == Role.DOCTOR) && !(userSession.getRole() == Role.ADMIN)){
             throw new RuntimeException("Access Denied");
+        }
+        //validate allowed statuses
+        if (newStatus == null||!ALLOWED_STATUSES.contains(newStatus.toUpperCase())){
+        throw new BusinessException("Invalid status. PENDING, CONFIRMED, COMPLETED only");
         }
 
         Optional<Appointment> appointmentOPT = appointmentRepository.findById(appointmentID);
         if(appointmentOPT.isEmpty()){
-            throw new RuntimeException("Unreachable Appointment");
+            throw new BusinessException("Appointment not found");
         }
 
         Appointment appointment = appointmentOPT.get();
@@ -221,11 +229,11 @@ public class AppointmentService {
         // Role check
         if(userSession.getRole() == Role.DOCTOR){
             if(appointment.getDoctor() == null || !appointment.getDoctor().getId().equals(userSession.getId())){
-                throw new RuntimeException("Access Denied");
+                throw new AccessDeniedException("Access Denied");
             }
         }
 
-        appointment.setStatus(newStatus);
+        appointment.setStatus(newStatus.toUpperCase());
         appointmentRepository.save(appointment);
 
         AppointmentResponseDTO safeAppointment = new AppointmentResponseDTO();
