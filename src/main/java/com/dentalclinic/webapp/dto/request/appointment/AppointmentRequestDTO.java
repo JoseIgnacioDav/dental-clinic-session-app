@@ -1,6 +1,5 @@
 package com.dentalclinic.webapp.dto.request.appointment;
 
-import com.dentalclinic.webapp.model.User;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -8,8 +7,8 @@ import java.time.LocalTime;
 public class AppointmentRequestDTO {
     private LocalDate date;
     private LocalTime time;
-    private User doctor;
-    private User patient;
+    private Long doctorId;
+    private Long patientId;
 
     public AppointmentRequestDTO(){}
 
@@ -29,19 +28,19 @@ public class AppointmentRequestDTO {
         this.time = time;
     }
 
-    public User getDoctor() {
-        return doctor;
+    public Long getDoctorId() {
+        return doctorId;
     }
 
-    public void setDoctor(User doctor) {
-        this.doctor = doctor;
+    public void setDoctorId(Long doctorId) {
+        this.doctorId = doctorId;
     }
 
-    public User getPatient() {
-        return patient;
+    public Long getPatientId() {
+        return patientId;
     }
 
-    public void setPatient(User patient) {
-        this.patient = patient;
+    public void setPatientId(Long patientId) {
+        this.patientId = patientId;
     }
 }
