@@ -1,10 +1,21 @@
 package com.dentalclinic.webapp.dto.request.user;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 public class UserRequestDTO {
+    @NotBlank
     private String socialsecuritynumber;
+    @NotBlank
     private String firstnames;
+    @NotBlank
     private String surname;
+    @NotBlank
+    @Email
     private String email;
+    @NotBlank
+    @Size(min = 6,message = "Password must be at least 6 characters")
     private String password;
 
     public UserRequestDTO(){}
