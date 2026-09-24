@@ -54,16 +54,21 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<!--this dependency is used to manage .env so i can connect the database -->
+		<!--this dependency is used to manage .env so I can connect the database -->
 		<dependency>
 			<groupId>io.github.cdimascio</groupId>
 			<artifactId>dotenv-java</artifactId>
 			<version>3.0.0</version>
 		</dependency>
-		<!-- this dependency allows the use of bcrypt to hash the passwords and it also locks the API-->
+		<!-- this dependency allows the use of bcrypt to hash the passwords, and it also locks the API-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<!-- this dependency allows data validation-->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 	</dependencies>
 
