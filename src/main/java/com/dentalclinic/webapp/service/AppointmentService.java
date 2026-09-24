@@ -2,12 +2,14 @@ package com.dentalclinic.webapp.service;
 
 import com.dentalclinic.webapp.dto.request.appointment.AppointmentRequestDTO;
 import com.dentalclinic.webapp.dto.response.appointment.*;
+import com.dentalclinic.webapp.dto.response.user.UserResponseDTO;
 import com.dentalclinic.webapp.model.Appointment;
 import com.dentalclinic.webapp.model.User;
 import com.dentalclinic.webapp.repository.AppointmentRepository;
 import com.dentalclinic.webapp.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.security.PublicKey;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
@@ -25,7 +27,7 @@ public class AppointmentService {
         this.userRepository = userRepository;
     }
 
-    public AppointmentResponseDTO createappointmet (AppointmentRequestDTO appointment, Long patientIdSession){
+    public AppointmentResponseDTO createappointment (AppointmentRequestDTO appointment, Long patientIdSession){
         // use of http session to check if the user is logged in with a valid JSESSIONID
         Optional<User> loggedUserOPT = userRepository.findById(patientIdSession);
         if(loggedUserOPT.isEmpty()){
@@ -199,4 +201,53 @@ public class AppointmentService {
     }
 
 
+    public AppointmentResponseDTO updateStatus(Long appointmentID, String newStatus, UserResponseDTO userSession){
+        if(userSession == null || userSession.getRole() == null){
+            throw new RuntimeException("Access Denied");
+        }
+
+        if(!userSession.getRole().equalsIgnoreCase("DOCTOR") && !userSession.getRole().equalsIgnoreCase("ADMIN")){
+            throw new RuntimeException("Access Denied");
+        }
+
+        Optional<Appointment> appointmentOPT = appointmentRepository.findById(appointmentID);
+        if(appointmentOPT.isEmpty()){
+            throw new RuntimeException("Unreachable Appointment");
+        }
+
+        Appointment appointment = appointmentOPT.get();
+
+        // Role check
+        if(userSession.getRole().equalsIgnoreCase("DOCTOR")){
+            if(appointment.getDoctor() == null || !appointment.getDoctor().getId().equals(userSession.getId())){
+                throw new RuntimeException("Access Denied");
+            }
+        }
+
+        appointment.setStatus(newStatus);
+        appointmentRepository.save(appointment);
+
+        AppointmentResponseDTO safeAppointment = new AppointmentResponseDTO();
+
+        // Validaciones defensivas para el DTO manteniendo tu estilo
+        if(appointment.getDoctor() != null){
+            safeAppointment.setDoctornames(appointment.getDoctor().getFirstnames() + " " + appointment.getDoctor().getSurname());
+        } else {
+            safeAppointment.setDoctornames("Unassigned Doctor Name");
+        }
+
+        safeAppointment.setStatus(appointment.getStatus());
+
+        if(appointment.getPatient() != null){
+            safeAppointment.setPatientnames(appointment.getPatient().getFirstnames() + " " + appointment.getPatient().getSurname());
+        } else {
+            safeAppointment.setPatientnames("Unassigned Patient Name");
+        }
+
+        safeAppointment.setId(appointment.getId());
+        safeAppointment.setTime(appointment.getTime());
+        safeAppointment.setDate(appointment.getDate());
+
+        return safeAppointment;
+    }
 }
