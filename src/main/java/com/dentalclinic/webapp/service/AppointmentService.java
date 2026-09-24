@@ -4,6 +4,7 @@ import com.dentalclinic.webapp.dto.request.appointment.AppointmentRequestDTO;
 import com.dentalclinic.webapp.dto.response.appointment.*;
 import com.dentalclinic.webapp.dto.response.user.UserResponseDTO;
 import com.dentalclinic.webapp.model.Appointment;
+import com.dentalclinic.webapp.model.Role;
 import com.dentalclinic.webapp.model.User;
 import com.dentalclinic.webapp.repository.AppointmentRepository;
 import com.dentalclinic.webapp.repository.UserRepository;
@@ -53,9 +54,9 @@ public class AppointmentService {
          * If the role is PATIENT ignore the json and set the appointment for himself
          * if the role is DOCTOR or ADMIN third party appointment creation is allowed
          * **/
-        if(loggedUser.getRole().equalsIgnoreCase("PATIENT")){
+        if(loggedUser.getRole() == Role.DOCTOR){
             safeAppointment.setPatient(loggedUser);
-        } else if (loggedUser.getRole().equalsIgnoreCase("DOCTOR")||loggedUser.getRole().equalsIgnoreCase("ADMIN")) {
+        } else if (loggedUser.getRole() == Role.DOCTOR||loggedUser.getRole() == Role.ADMIN) {
             if (appointment.getPatientId() == null){
                 throw new RuntimeException("You must specify the Patient's ID for this appointment");
             }
@@ -206,7 +207,7 @@ public class AppointmentService {
             throw new RuntimeException("Access Denied");
         }
 
-        if(!userSession.getRole().equalsIgnoreCase("DOCTOR") && !userSession.getRole().equalsIgnoreCase("ADMIN")){
+        if(!(userSession.getRole() == Role.DOCTOR) && !(userSession.getRole() == Role.ADMIN)){
             throw new RuntimeException("Access Denied");
         }
 
@@ -218,7 +219,7 @@ public class AppointmentService {
         Appointment appointment = appointmentOPT.get();
 
         // Role check
-        if(userSession.getRole().equalsIgnoreCase("DOCTOR")){
+        if(userSession.getRole() == Role.DOCTOR){
             if(appointment.getDoctor() == null || !appointment.getDoctor().getId().equals(userSession.getId())){
                 throw new RuntimeException("Access Denied");
             }
