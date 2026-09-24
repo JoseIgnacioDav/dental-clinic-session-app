@@ -120,7 +120,7 @@ public class AppointmentService {
     }
     /* Return Doctor assigned Appointments incluiding patient confidential information on a given date */
     public List<AppointmentConfidentialResponseDTO> getDoctorsAssignedAppointments(Long doctorId, LocalDate date){
-        List<Appointment>appointments = appointmentRepository.findByDoctorAndDate(doctorId,date);
+        List<Appointment>appointments = appointmentRepository.findByDoctor_IdAndDate(doctorId,date);
         //Clean and safe list
         List<AppointmentConfidentialResponseDTO>safelist = new ArrayList<>();
 
@@ -165,7 +165,7 @@ public class AppointmentService {
         return safelist;
     }
     public List<OccupiedAppointmentsPublicResponseDTO>publicversion(Long doctorId, LocalDate date){
-        List<Appointment> exposedAppointments = appointmentRepository.findByDoctorAndDate(doctorId, date);
+        List<Appointment> exposedAppointments = appointmentRepository.findByDoctor_IdAndDate(doctorId, date);
         List<OccupiedAppointmentsPublicResponseDTO>safeList = new ArrayList<>();
         for(Appointment exposedAppointment : exposedAppointments){
             OccupiedAppointmentsPublicResponseDTO dto = new OccupiedAppointmentsPublicResponseDTO();

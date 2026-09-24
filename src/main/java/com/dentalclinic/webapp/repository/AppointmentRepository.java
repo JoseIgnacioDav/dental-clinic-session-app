@@ -9,8 +9,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 public interface AppointmentRepository extends JpaRepository<Appointment,Long> {
-    // to find all appointments for a specific doctor on a given date
-    List<Appointment> findByDoctorAndDate (Long doctorId, LocalDate date);
+    List<Appointment> findByDoctor_IdAndDate(Long doctorId, LocalDate date);
     // to find the appointment history of a patient
     List<Appointment> findAppointmentByPatient_Id(Long patientId);
     // to check if there is an Appointment already for a doctor at a specific date and time
