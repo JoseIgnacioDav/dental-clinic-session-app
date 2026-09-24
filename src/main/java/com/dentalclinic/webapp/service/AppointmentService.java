@@ -96,6 +96,7 @@ public class AppointmentService {
         return  safeAppointmentDTO;
 
     }
+    // get all the Patient's Scheduled Appointments
     public List<PatientScheduledAppointmentsDTO>getPAtientScheduledAppointments(Long id){
         List<Appointment>exposedAppointments = appointmentRepository.findAppointmentByPatient_Id(id);
         List<PatientScheduledAppointmentsDTO> safeAppointments = new ArrayList<>();
