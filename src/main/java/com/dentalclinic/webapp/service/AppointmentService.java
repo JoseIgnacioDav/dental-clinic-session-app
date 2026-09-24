@@ -1,9 +1,7 @@
 package com.dentalclinic.webapp.service;
 
 import com.dentalclinic.webapp.dto.request.appointment.AppointmentRequestDTO;
-import com.dentalclinic.webapp.dto.response.appointment.AppointmentConfidentialResponseDTO;
-import com.dentalclinic.webapp.dto.response.appointment.AppointmentResponseDTO;
-import com.dentalclinic.webapp.dto.response.appointment.PatientScheduledAppointmentsDTO;
+import com.dentalclinic.webapp.dto.response.appointment.*;
 import com.dentalclinic.webapp.model.Appointment;
 import com.dentalclinic.webapp.model.User;
 import com.dentalclinic.webapp.repository.AppointmentRepository;
@@ -12,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -163,7 +162,25 @@ public class AppointmentService {
         }
         return safelist;
     }
+    public List<OccupiedAppointmentsPublicResponseDTO>publicversion(Long doctorId, LocalDate date){
+        List<Appointment> exposedAppointments = appointmentRepository.findByDoctorAndDate(doctorId, date);
+        List<OccupiedAppointmentsPublicResponseDTO>safeList = new ArrayList<>();
+        for(Appointment exposedAppointment : exposedAppointments){
+            OccupiedAppointmentsPublicResponseDTO dto = new OccupiedAppointmentsPublicResponseDTO();
+            dto.setId(exposedAppointment.getId());
+            dto.setDate(exposedAppointment.getDate());
+            dto.setTime(exposedAppointment.getTime());
+            dto.setStatus(exposedAppointment.getStatus());
 
+            if (exposedAppointment.getDoctor()!= null){
+                dto.setDoctorNames(exposedAppointment.getDoctor().getFirstnames()+" "+exposedAppointment.getDoctor().getSurname());
+            }else {
+                dto.setDoctorNames("Unassigned Doctor Name");
+            }
+            safeList.add(dto);
+        }
+        return safeList;
+    }
 
 
 
