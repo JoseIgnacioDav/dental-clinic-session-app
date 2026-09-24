@@ -6,7 +6,6 @@ import com.dentalclinic.webapp.model.Appointment;
 import com.dentalclinic.webapp.model.User;
 import com.dentalclinic.webapp.repository.AppointmentRepository;
 import com.dentalclinic.webapp.repository.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -17,7 +16,7 @@ public class AppointmentService {
     private final UserRepository userRepository;
 
 
-    public AppointmentService(AppointmentRepository appointmentRepository, UserRepository userRepository, PasswordEncoder passwordEncoder){
+    public AppointmentService(AppointmentRepository appointmentRepository, UserRepository userRepository){
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
     }
@@ -32,9 +31,16 @@ public class AppointmentService {
         Appointment safeAppointment = new Appointment();
         safeAppointment.setDate(appointment.getDate());
         safeAppointment.setTime(appointment.getTime());
-        safeAppointment.setPatient(appointment.getPatient());
-        safeAppointment.setDoctor(appointment.getDoctor());
 
+        //Doctor validation
+        if(appointment.getDoctorId() == null){
+            throw new RuntimeException("You must specify the Doctor's ID");
+        }
+        Optional<User> doctorOPT = userRepository.findById(appointment.getDoctorId());
+        if(doctorOPT.isEmpty()){
+            throw new RuntimeException("The Doctor does not exist");
+        }
+        safeAppointment.setDoctor(doctorOPT.get());
 
         //who is creating the date:
         /**
@@ -44,11 +50,11 @@ public class AppointmentService {
         if(loggedUser.getRole().equalsIgnoreCase("PATIENT")){
             safeAppointment.setPatient(loggedUser);
         } else if (loggedUser.getRole().equalsIgnoreCase("DOCTOR")||loggedUser.getRole().equalsIgnoreCase("ADMIN")) {
-            if (safeAppointment.getPatient() == null||safeAppointment.getPatient().getId() == null){
+            if (appointment.getPatientId() == null){
                 throw new RuntimeException("You must specify the Patient's ID for this appointment");
             }
             //Patient validation
-            Optional<User> jsonPatientOPT =userRepository.findById(safeAppointment.getPatient().getId());
+            Optional<User> jsonPatientOPT =userRepository.findById(appointment.getPatientId());
             if(jsonPatientOPT.isEmpty()){
                 throw new RuntimeException("The Patiend does not exist");
             }
@@ -79,6 +85,7 @@ public class AppointmentService {
         safeAppointmentDTO.setTime(safeAppointment.getTime());
         safeAppointmentDTO.setDate(safeAppointment.getDate());
         safeAppointmentDTO.setPatientnames(safeAppointment.getPatient().getFirstnames()+" "+ safeAppointment.getPatient().getSurname());
+
         User doctor = userRepository.findById(safeAppointment.getDoctor().getId()).orElse(null);
         if(doctor != null){
             safeAppointmentDTO.setDoctornames(doctor.getFirstnames()+" "+ doctor.getSurname());
@@ -86,6 +93,7 @@ public class AppointmentService {
         return  safeAppointmentDTO;
 
     }
+
 
 
 }
