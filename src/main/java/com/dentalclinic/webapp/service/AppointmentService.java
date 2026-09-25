@@ -189,8 +189,7 @@ public class AppointmentService {
 
     public List<ListDoctorsDTO> listDoctors(){
         List<ListDoctorsDTO>safeList = new ArrayList<>();
-        String role = "DOCTOR";
-        List<User>exposedList = userRepository.findByRole(role);
+        List<User>exposedList = userRepository.findByRole(Role.DOCTOR);
         if(exposedList.isEmpty()){
             throw new RuntimeException("There are no Doctors");
         }
