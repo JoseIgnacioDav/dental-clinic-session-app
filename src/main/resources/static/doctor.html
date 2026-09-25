@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Dashboard - Dental Clinic</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+        }
+        .dashboard-container {
+            max-width: 850px;
+            margin: 0 auto;
+        }
+        .header-card, .card {
+            background: #ffffff;
+            padding: 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 1.5rem;
+        }
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-control-select, .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+        .btn-logout {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-logout:hover { background-color: #c0392b; }
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+        }
+        .btn-primary:hover { background-color: #2980b9; }
+        .appointment-item {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+        .appointment-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .select-status {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #bdc3c7;
+            font-size: 13px;
+            background-color: #fff;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .empty-state {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <!-- HEADER -->
+    <div class="header-card" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="margin: 0; color: #2c3e50;" id="panelTitle">Professional Panel</h2>
+            <p id="userName" style="margin: 5px 0 0 0; color: #7f8c8d; font-size: 14px;">Loading user...</p>
+        </div>
+        <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+
+    <!-- APPOINTMENTS CONSULTATION SECTION -->
+    <div class="card">
+        <h1 class="page-title" style="margin-top: 0; font-size: 22px; color: #2c3e50;">Appointments Schedule</h1>
+        <p class="page-subtitle" style="color: #666; font-size: 14px; margin-bottom: 20px;">View and manage the status of assigned appointments.</p>
+
+        <!-- DENTIST SELECTOR (Visible only if ADMIN) -->
+        <div class="form-group" id="adminDentistContainer" style="display: none;">
+            <label><strong>Select Dentist (Administrator Mode):</strong></label>
+            <select id="selectDentist" class="form-control-select">
+                <option value="">Loading dentists...</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label><strong>Consultation Date:</strong></label>
+                <input type="date" id="consultDate" class="form-control">
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end;">
+                <button class="btn btn-primary" onclick="loadAppointments()">
+                    Search Appointments
+                </button>
+            </div>
+        </div>
+
+        <div id="appointmentsList">
+            <div class="empty-state">
+                <p>Select a date to view appointments</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = 'http://localhost:8080';
+
+    // 1. Validate session and role upon loading the page
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+    // New backend roles: DOCTOR and ADMIN
+    if (!user || (user.role !== 'DOCTOR' && user.role !== 'ADMIN')) {
+        window.location.href = 'index.html';
+    } else {
+        const fullName = `${user.firstnames || ''} ${user.surname || ''}`.trim();
+        document.getElementById('userName').textContent = `${fullName || user.email} — Role: [${user.role}]`;
+        document.getElementById('panelTitle').textContent = user.role === 'ADMIN' ? 'Administrator Panel' : 'Dentist Panel';
+    }
+
+    // Default to today's date
+    document.getElementById('consultDate').valueAsDate = new Date();
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (user.role === 'ADMIN') {
+            document.getElementById('adminDentistContainer').style.display = 'block';
+            await loadDentists();
+        }
+        loadAppointments();
+    });
+
+    // GET /api/appointments/doctors → [{ doctorId, names }]
+    async function loadDentists() {
+        const select = document.getElementById('selectDentist');
+        try {
+            const res = await fetch(`${API}/api/appointments/doctors`, {
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Error listing dentists');
+
+            const dentists = await res.json();
+            select.innerHTML = '';
+
+            if (dentists.length === 0) {
+                select.innerHTML = '<option value="">No registered dentists available</option>';
+                return;
+            }
+
+            dentists.forEach(dentist => {
+                const option = document.createElement('option');
+                option.value = dentist.doctorId;
+                option.textContent = dentist.names || `ID: ${dentist.doctorId}`;
+                select.appendChild(option);
+            });
+        } catch (err) {
+            console.error(err);
+            select.innerHTML = '<option value="">Error loading dentists</option>';
+        }
+    }
+
+    async function logout() {
+        try {
+            await fetch(`${API}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (e) {
+            console.error('Error signing out', e);
+        }
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+    }
+
+    // GET /api/appointments/doctor/assigned?doctorId=...&date=...
+    async function loadAppointments() {
+        const date = document.getElementById('consultDate').value;
+        const listContainer = document.getElementById('appointmentsList');
+
+        if (!date) {
+            listContainer.innerHTML = '<div class="empty-state"><p>Select a valid date</p></div>';
+            return;
+        }
+
+        listContainer.innerHTML = '<div class="empty-state"><p>Loading appointments...</p></div>';
+
+        // Determine doctorId
+        let doctorId = user.id; // Default to own ID if DOCTOR
+
+        if (user.role === 'ADMIN') {
+            const selectDentist = document.getElementById('selectDentist');
+            if (selectDentist && selectDentist.value) {
+                doctorId = parseInt(selectDentist.value);
+            }
+        }
+
+        try {
+            const res = await fetch(
+                `${API}/api/appointments/doctor/assigned?doctorId=${doctorId}&date=${date}`,
+                {
+                    method: 'GET',
+                    credentials: 'include'
+                }
+            );
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                listContainer.innerHTML = `<div class="empty-state"><p style="color: red;">${data.message || data.error || 'Error fetching information'}</p></div>`;
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                listContainer.innerHTML = '<div class="empty-state"><p>No appointments scheduled for this date</p></div>';
+                return;
+            }
+
+            // Render list with status dropdown
+            listContainer.innerHTML = data.map(appointment => {
+                const currentStatus = appointment.status ? appointment.status.toUpperCase() : 'PENDING';
+                const shortTime = appointment.time ? appointment.time.substring(0, 5) : '';
+
+                return `
+                    <div class="appointment-item">
+                        <div class="appointment-info">
+                            <strong style="font-size: 16px; color: #2c3e50;">🕒 ${shortTime} – ${appointment.patientNames || 'Patient'}</strong>
+                            <div style="font-size: 13px; color: #555; margin-top: 4px;">
+                                <span>ID / SSN: <strong>${appointment.patientSocialSecurityNumber || '—'}</strong></span> ·
+                                <span>Email: <strong>${appointment.patientEmail || '—'}</strong></span>
+                            </div>
+                        </div>
+                        <div class="appointment-actions">
+                            <select class="select-status" onchange="updateAppointmentStatus(${appointment.id}, this.value)">
+                                <option value="PENDING" ${currentStatus === 'PENDING' ? 'selected' : ''}>PENDING</option>
+                                <option value="CONFIRMED" ${currentStatus === 'CONFIRMED' ? 'selected' : ''}>CONFIRMED</option>
+                                <option value="COMPLETED" ${currentStatus === 'COMPLETED' ? 'selected' : ''}>COMPLETED</option>
+                                <option value="CANCELLED" ${currentStatus === 'CANCELLED' ? 'selected' : ''}>CANCELLED</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (err) {
+            console.error(err);
+            listContainer.innerHTML = '<div class="empty-state"><p style="color: red;">Server connection error</p></div>';
+        }
+    }
+
+    // PUT /api/appointments/{id}/status
+    async function updateAppointmentStatus(appointmentId, newStatus) {
+        try {
+            const res = await fetch(`${API}/api/appointments/${appointmentId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                alert(data.message || data.error || 'Could not update status');
+                loadAppointments(); // Reload to visually revert if failed
+                return;
+            }
+
+            console.log('Status updated successfully:', data.status);
+        } catch (err) {
+            console.error(err);
+            alert('Connection error while trying to update status');
+            loadAppointments();
+        }
+    }
+</script>
+</body>
+</html>
