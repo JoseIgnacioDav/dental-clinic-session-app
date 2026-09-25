@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard - Dental Clinic</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+        }
+        .dashboard-container {
+            max-width: 750px;
+            margin: 0 auto;
+        }
+        .header-card {
+            background: #ffffff;
+            padding: 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .schedule-card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .slot-item {
+            padding: 12px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        .slot-busy {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+            cursor: not-allowed;
+        }
+        .slot-free {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+            cursor: pointer;
+        }
+        .slot-free:hover {
+            background-color: #c8e6c9;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .doctor-badge {
+            font-size: 15px;
+            color: #2c3e50;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+        }
+        .form-control-select, .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .alert {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        .alert.error { background-color: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+        .alert.success { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .btn-logout {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-logout:hover { background-color: #c0392b; }
+        .confirmation-box {
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            color: #0d47a1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <!-- HEADER WITH WELCOME AND LOGOUT -->
+    <div class="header-card">
+        <div>
+            <h2 style="margin: 0; color: #2c3e50;">Patient Dashboard</h2>
+            <p id="welcomeUser" style="margin: 5px 0 0 0; color: #7f8c8d; font-size: 14px;">Welcome</p>
+        </div>
+        <button class="btn-logout" onclick="logoutSession()">Log Out</button>
+    </div>
+
+    <div id="alert" class="alert" style="display: none;"></div>
+
+    <!-- SECTION: MY SCHEDULED APPOINTMENTS -->
+    <div class="schedule-card">
+        <h2>📋 My Scheduled Appointments</h2>
+        <p class="subtitle" style="color: #666; font-size: 14px;">Check the current status of your scheduled appointments.</p>
+        <div id="misCitasContainer">
+            <p style="color: #666; text-align: center;">Loading your appointments...</p>
+        </div>
+    </div>
+
+    <!-- SECTION: BOOK APPOINTMENTS -->
+    <div class="schedule-card">
+        <h2>📅 Book Dental Appointment</h2>
+        <p class="subtitle" style="color: #666; font-size: 14px;">Select a dentist, a date, and click on an available time slot to book your appointment.</p>
+
+        <div class="form-group">
+            <label><strong>Select a Dentist:</strong></label>
+            <select id="selectDoctor" class="form-control-select" onchange="checkAvailability()">
+                <option value="">Loading dentists...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label><strong>Select a Date:</strong></label>
+            <input type="date" id="consultDate" class="form-control" onchange="checkAvailability()">
+        </div>
+
+        <div id="doctorInfo" class="doctor-badge">
+            Loading dentist information...
+        </div>
+
+        <h3>Available Time Slots</h3>
+        <p style="font-size: 12px; color: #e67e22; margin-bottom: 10px;">💡 Tip: Green blocks are free. Click on one to instantly confirm your reservation.</p>
+
+        <div id="slotsContainer" class="slots-grid">
+            <p style="color: #666; grid-column: 1 / -1; text-align: center;">Select a date and a dentist to view time slots.</p>
+        </div>
+
+        <div id="resultadoCreacion"></div>
+    </div>
+</div>
+
+<script>
+    const API = 'http://localhost:8080';
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const savedUser = localStorage.getItem('user');
+        if (savedUser) {
+            const userObj = JSON.parse(savedUser);
+            // The backend now returns "firstnames"
+            const name = userObj.firstnames || userObj.email || 'Patient';
+            document.getElementById('welcomeUser').textContent = `Welcome, ${name}`;
+        }
+
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('consultDate');
+        if (dateInput) {
+            dateInput.value = today;
+        }
+
+        await loadMyAppointments();
+        await loadDoctors();
+    });
+
+    // Transforms "2026-12-24" → "December 24, 2026"
+    function formatPrettyDate(dateStr) {
+        if (!dateStr) return '';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return dateStr;
+
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+
+        const dateObj = new Date(year, month, day);
+        return dateObj.toLocaleDateString('en-US', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+    }
+
+    // GET /api/appointments/patient/my-appointments
+    // Response: [{ id, date, time, doctorName, status }]
+    async function loadMyAppointments() {
+        const container = document.getElementById('misCitasContainer');
+        try {
+            const res = await fetch(`${API}/api/appointments/patient/my-appointments`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (!res.ok) throw new Error('Error loading your appointments');
+
+            const appointments = await res.json();
+            container.innerHTML = '';
+
+            if (appointments.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center; margin: 15px 0;">You have no scheduled appointments at the moment.</p>';
+                return;
+            }
+
+            appointments.forEach(appointment => {
+                const formattedDate = formatPrettyDate(appointment.date);
+                const shortTime = appointment.time ? appointment.time.substring(0, 5) : '';
+
+                const box = document.createElement('div');
+                box.className = 'confirmation-box';
+                box.style.marginTop = '15px';
+                box.innerHTML = `
+                    <h3 style="margin-top: 0; color: #1565c0;">📅 Scheduled Appointment #${appointment.id}</h3>
+                    <p><strong>Date and Time:</strong> ${formattedDate} at ${shortTime}</p>
+                    <p><strong>Dentist:</strong> ${appointment.doctorName || 'Assigned'}</p>
+                    <p><strong>Status:</strong> <span style="color: #2e7d32; font-weight: bold;">${appointment.status}</span></p>
+                `;
+                container.appendChild(box);
+            });
+
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = '<p style="color: red; text-align: center;">Could not load your scheduled appointments.</p>';
+        }
+    }
+
+    // GET /api/appointments/doctors → [{ doctorId, names }]
+    async function loadDoctors() {
+        const select = document.getElementById('selectDoctor');
+        try {
+            const res = await fetch(`${API}/api/appointments/doctors`, {
+                credentials: 'include'
+            });
+            if (!res.ok) throw new Error('Error loading dentists');
+
+            const doctors = await res.json();
+            select.innerHTML = '';
+
+            if (doctors.length === 0) {
+                select.innerHTML = '<option value="">No registered dentists found</option>';
+                return;
+            }
+
+            doctors.forEach(doc => {
+                const option = document.createElement('option');
+                option.value = doc.doctorId;
+                option.textContent = doc.names || `Dentist ID: ${doc.doctorId}`;
+                select.appendChild(option);
+            });
+
+            checkAvailability();
+
+        } catch (err) {
+            console.error(err);
+            select.innerHTML = '<option value="">Error loading dentists</option>';
+        }
+    }
+
+    function showAlert(msg, type = 'error') {
+        const el = document.getElementById('alert');
+        el.textContent = msg;
+        el.className = `alert ${type}`;
+        el.style.display = 'block';
+    }
+
+    function hideAlert() {
+        document.getElementById('alert').style.display = 'none';
+    }
+
+    // GET /api/appointments/public/occupied?doctorId=...&date=...
+    async function checkAvailability() {
+        const date = document.getElementById('consultDate').value;
+        const selectDoctor = document.getElementById('selectDoctor');
+        const doctorId = selectDoctor.value;
+        const slotsContainer = document.getElementById('slotsContainer');
+        const infoContainer = document.getElementById('doctorInfo');
+
+        if (!date || !doctorId) return;
+
+        const workingHours = [
+            "09:00:00", "10:00:00", "11:00:00",
+            "12:00:00", "14:00:00", "15:00:00", "16:00:00"
+        ];
+
+        slotsContainer.innerHTML = '<p style="color: #666; grid-column: 1 / -1; text-align: center;">Checking availability...</p>';
+        infoContainer.innerHTML = 'Checking dentist info...';
+
+        try {
+            const res = await fetch(`${API}/api/appointments/public/occupied?doctorId=${doctorId}&date=${date}`, {
+                credentials: 'include'
+            });
+
+            if (!res.ok) throw new Error('Error checking appointments');
+
+            const occupiedAppointments = await res.json();
+            // The field is now called "time"
+            const occupiedHoursSet = new Set(occupiedAppointments.map(c => c.time));
+
+            const selectedName = selectDoctor.options[selectDoctor.selectedIndex].text;
+            if (occupiedAppointments.length > 0 && occupiedAppointments[0].doctorNames) {
+                infoContainer.innerHTML = `<strong>Dentist:</strong> ${occupiedAppointments[0].doctorNames}`;
+            } else {
+                infoContainer.innerHTML = `<strong>Dentist:</strong> ${selectedName} (No occupied appointments for this date)`;
+            }
+
+            slotsContainer.innerHTML = '';
+
+            workingHours.forEach(hour => {
+                const slot = document.createElement('div');
+                const isOccupied = occupiedHoursSet.has(hour);
+                const formattedHour = hour.substring(0, 5);
+
+                if (isOccupied) {
+                    slot.className = 'slot-item slot-busy';
+                    slot.innerHTML = ` ${formattedHour} <br><span style="font-size: 11px; font-weight: bold;">Busy</span>`;
+                } else {
+                    slot.className = 'slot-item slot-free';
+                    slot.innerHTML = ` ${formattedHour} <br><span style="font-size: 11px; font-weight: bold;">Book</span>`;
+                    slot.onclick = () => requestAppointment(date, hour, doctorId);
+                }
+
+                slotsContainer.appendChild(slot);
+            });
+
+        } catch (err) {
+            console.error(err);
+            slotsContainer.innerHTML = '<p style="color: red; grid-column: 1 / -1; text-align: center;">Could not connect to the server.</p>';
+            infoContainer.innerHTML = `<strong style="color: red;">Error connecting to API</strong>`;
+        }
+    }
+
+    // POST /api/appointments/create
+    // Body: { date, time, doctorId }
+    async function requestAppointment(date, hour, doctorId) {
+        hideAlert();
+        const resultadoDiv = document.getElementById('resultadoCreacion');
+
+        const readableDate = formatPrettyDate(date);
+        const shortTime = hour.substring(0, 5);
+
+        if (!confirm(`Do you want to confirm your appointment for ${readableDate} at ${shortTime}?`)) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API}/api/appointments/create`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    date: date,
+                    time: hour,
+                    doctorId: parseInt(doctorId)
+                    // patientId is not sent: backend takes it from session
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                showAlert(data.message || data.error || 'Could not create appointment');
+                return;
+            }
+
+            const formattedResponseDate = formatPrettyDate(data.date);
+
+            resultadoDiv.innerHTML = `
+                <div class="confirmation-box">
+                    <h3 style="margin-top: 0; color: #1565c0;">🎉 Appointment Successfully Created!</h3>
+                    <p><strong>Appointment ID:</strong> #${data.id}</p>
+                    <p><strong>Date and Time:</strong> ${formattedResponseDate} at ${data.time ? data.time.substring(0, 5) : ''}</p>
+                    <p><strong>Dentist:</strong> ${data.doctornames || 'Assigned'}</p>
+                    <p><strong>Patient:</strong> ${data.patientnames || 'Registered'}</p>
+                    <p><strong>Status:</strong> <span style="color: #2e7d32; font-weight: bold;">${data.status}</span></p>
+                </div>
+            `;
+
+            // Refresh availability and appointment list
+            checkAvailability();
+            loadMyAppointments();
+
+        } catch (err) {
+            console.error(err);
+            showAlert('Connection error while trying to book the appointment');
+        }
+    }
+
+    async function logoutSession() {
+        try {
+            await fetch(`${API}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (e) {
+            console.error('Error logging out', e);
+        }
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+    }
+</script>
+</body>
+</html>
