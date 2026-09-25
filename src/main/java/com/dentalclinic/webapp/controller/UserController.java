@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 
@@ -35,7 +37,11 @@ public class UserController {
         session.setAttribute("loggedUser", loggedUser);
         return ResponseEntity.ok(loggedUser);
     }
-
+    @PostMapping("/logout")
+    public ResponseEntity<Map<String,String>> logout (HttpSession session){
+        session.invalidate(); //destroys the session
+        return ResponseEntity.ok(Map.of("message","Logged out succesfully"));
+    }
 
 
 
