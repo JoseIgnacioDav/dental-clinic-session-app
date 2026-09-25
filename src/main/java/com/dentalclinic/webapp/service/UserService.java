@@ -5,6 +5,7 @@ import com.dentalclinic.webapp.dto.request.user.UserRequestDTO;
 import com.dentalclinic.webapp.dto.response.user.UserResponseDTO;
 import com.dentalclinic.webapp.model.User;
 import com.dentalclinic.webapp.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
@@ -24,6 +25,7 @@ public class UserService {
     }
 
     // safe dtos to return and get an user
+    @Transactional
     public UserResponseDTO userRegistration (UserRequestDTO receiveduserdto){
         User receivedUser = new User();
         receivedUser.setFirstnames(receiveduserdto.getFirstnames());
