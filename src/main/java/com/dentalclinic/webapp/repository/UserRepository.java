@@ -1,5 +1,6 @@
 package com.dentalclinic.webapp.repository;
 
+import com.dentalclinic.webapp.model.Role;
 import com.dentalclinic.webapp.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -14,6 +15,6 @@ public interface UserRepository extends JpaRepository<User,Long> {
 
 
     //it will be used to find every user that has a certain role
-    List<User> findByRole(String role);
+    List<User> findByRole(Role role);
 
 }
