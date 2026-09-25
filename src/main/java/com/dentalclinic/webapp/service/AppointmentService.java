@@ -29,7 +29,7 @@ public class AppointmentService {
         this.appointmentRepository = appointmentRepository;
         this.userRepository = userRepository;
     }
-
+    @Transactional
     public AppointmentResponseDTO createAppointment(AppointmentRequestDTO appointment, Long patientIdSession){
         // use of http session to check if the user is logged in with a valid JSESSIONID
         Optional<User> loggedUserOPT = userRepository.findById(patientIdSession);
