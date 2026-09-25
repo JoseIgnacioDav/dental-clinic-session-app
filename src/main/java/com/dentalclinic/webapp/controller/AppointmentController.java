@@ -3,6 +3,8 @@ package com.dentalclinic.webapp.controller;
 import com.dentalclinic.webapp.dto.request.appointment.AppointmentRequestDTO;
 import com.dentalclinic.webapp.dto.response.appointment.*;
 import com.dentalclinic.webapp.dto.response.user.UserResponseDTO;
+import com.dentalclinic.webapp.exception.AccessDeniedException;
+import com.dentalclinic.webapp.exception.UnauthorizedException;
 import com.dentalclinic.webapp.model.Role;
 import com.dentalclinic.webapp.service.AppointmentService;
 import jakarta.servlet.http.HttpSession;
@@ -30,9 +32,9 @@ public class AppointmentController {
     public ResponseEntity<AppointmentResponseDTO> createAppointment(@Valid @RequestBody AppointmentRequestDTO requestDTO, HttpSession session) {
         UserResponseDTO loggedUser = (UserResponseDTO) session.getAttribute("loggedUser");
         if (loggedUser == null) {
-            throw new RuntimeException("Unauthorized: No active session");
+            throw new UnauthorizedException("Unauthorized: No active session");
         }
-        AppointmentResponseDTO response = appointmentService.createappointment(requestDTO, loggedUser.getId());
+        AppointmentResponseDTO response = appointmentService.createAppointment(requestDTO, loggedUser.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -41,9 +43,9 @@ public class AppointmentController {
     public ResponseEntity<List<PatientScheduledAppointmentsDTO>> getPatientAppointments(HttpSession session) {
         UserResponseDTO loggedUser = (UserResponseDTO) session.getAttribute("loggedUser");
         if (loggedUser == null) {
-            throw new RuntimeException("Unauthorized: No active session");
+            throw new UnauthorizedException("No active session");
         }
-        List<PatientScheduledAppointmentsDTO> appointments = appointmentService.getPAtientScheduledAppointments(loggedUser.getId());
+        List<PatientScheduledAppointmentsDTO> appointments = appointmentService.getPatientScheduledAppointments(loggedUser.getId());
         return ResponseEntity.ok(appointments);
     }
 
@@ -55,8 +57,11 @@ public class AppointmentController {
             HttpSession session) {
 
         UserResponseDTO loggedUser = (UserResponseDTO) session.getAttribute("loggedUser");
-        if (loggedUser == null || (!(loggedUser.getRole()== Role.DOCTOR) && !(loggedUser.getRole()== Role.ADMIN))) {
-            throw new RuntimeException("Access Denied");
+        if (loggedUser == null){
+            throw new UnauthorizedException("No Active Session");
+        }
+        if(loggedUser.getRole()!= Role.DOCTOR && loggedUser.getRole()!= Role.ADMIN){
+            throw new AccessDeniedException("Access Denied");
         }
 
         // If DOCTOR, force their own ID
@@ -73,14 +78,14 @@ public class AppointmentController {
     public ResponseEntity<List<OccupiedAppointmentsPublicResponseDTO>> getPublicAppointments(
             @RequestParam Long doctorId,
             @RequestParam LocalDate date) {
-        List<OccupiedAppointmentsPublicResponseDTO> appointments = appointmentService.publicversion(doctorId, date);
+        List<OccupiedAppointmentsPublicResponseDTO> appointments = appointmentService.getPublicOccupiedAppointments(doctorId, date);
         return ResponseEntity.ok(appointments);
     }
 
     // List all doctors
     @GetMapping("/doctors")
     public ResponseEntity<List<ListDoctorsDTO>> listDoctors() {
-        List<ListDoctorsDTO> doctors = appointmentService.listdoctors();
+        List<ListDoctorsDTO> doctors = appointmentService.listDoctors();
         return ResponseEntity.ok(doctors);
     }
 
@@ -93,7 +98,7 @@ public class AppointmentController {
 
         UserResponseDTO loggedUser = (UserResponseDTO) session.getAttribute("loggedUser");
         if (loggedUser == null) {
-            throw new RuntimeException("Unauthorized: No active session");
+            throw new UnauthorizedException("No active session");
         }
 
         String newStatus = body.get("status");
