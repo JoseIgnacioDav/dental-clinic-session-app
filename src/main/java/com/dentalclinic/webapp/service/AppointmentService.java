@@ -30,7 +30,7 @@ public class AppointmentService {
         this.userRepository = userRepository;
     }
 
-    public AppointmentResponseDTO createappointment (AppointmentRequestDTO appointment, Long patientIdSession){
+    public AppointmentResponseDTO createAppointment(AppointmentRequestDTO appointment, Long patientIdSession){
         // use of http session to check if the user is logged in with a valid JSESSIONID
         Optional<User> loggedUserOPT = userRepository.findById(patientIdSession);
         if(loggedUserOPT.isEmpty()){
@@ -103,7 +103,7 @@ public class AppointmentService {
 
     }
     // get all the Patient's Scheduled Appointments
-    public List<PatientScheduledAppointmentsDTO>getPAtientScheduledAppointments(Long id){
+    public List<PatientScheduledAppointmentsDTO> getPatientScheduledAppointments(Long id){
         List<Appointment>exposedAppointments = appointmentRepository.findAppointmentByPatient_Id(id);
         List<PatientScheduledAppointmentsDTO> safeAppointments = new ArrayList<>();
         for(Appointment exposedAppointment : exposedAppointments){
@@ -167,7 +167,7 @@ public class AppointmentService {
         }
         return safelist;
     }
-    public List<OccupiedAppointmentsPublicResponseDTO>publicversion(Long doctorId, LocalDate date){
+    public List<OccupiedAppointmentsPublicResponseDTO> getPublicOccupiedAppointments(Long doctorId, LocalDate date){
         List<Appointment> exposedAppointments = appointmentRepository.findByDoctor_IdAndDate(doctorId, date);
         List<OccupiedAppointmentsPublicResponseDTO>safeList = new ArrayList<>();
         for(Appointment exposedAppointment : exposedAppointments){
@@ -187,7 +187,7 @@ public class AppointmentService {
         return safeList;
     }
 
-    public List<ListDoctorsDTO>listdoctors(){
+    public List<ListDoctorsDTO> listDoctors(){
         List<ListDoctorsDTO>safeList = new ArrayList<>();
         String role = "DOCTOR";
         List<User>exposedList = userRepository.findByRole(role);
