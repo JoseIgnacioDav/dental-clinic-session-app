@@ -56,21 +56,24 @@ public class AppointmentService {
          * If the role is PATIENT ignore the json and set the appointment for himself
          * if the role is DOCTOR or ADMIN third party appointment creation is allowed
          * **/
-        if(loggedUser.getRole() == Role.DOCTOR){
+        if(loggedUser.getRole() == Role.PATIENT){
             safeAppointment.setPatient(loggedUser);
         } else if (loggedUser.getRole() == Role.DOCTOR||loggedUser.getRole() == Role.ADMIN) {
-            if (appointment.getPatientId() == null){
-                throw new RuntimeException("You must specify the Patient's ID for this appointment");
+
+            if (appointment.getPatientId() == null) {
+                throw new BusinessException("You must specify the Patient's ID for this appointment");
             }
             //Patient validation
-            Optional<User> jsonPatientOPT =userRepository.findById(appointment.getPatientId());
-            if(jsonPatientOPT.isEmpty()){
-                throw new RuntimeException("The Patiend does not exist");
+            Optional<User> jsonPatientOPT = userRepository.findById(appointment.getPatientId());
+            if (jsonPatientOPT.isEmpty()) {
+                throw new BusinessException("The Patiend does not exist");
             }
-            //turn it into User
-            User jsonPatient = jsonPatientOPT.get();
-            safeAppointment.setPatient(jsonPatient);
+            safeAppointment.setPatient(jsonPatientOPT.get());
+        }else{
+            throw new AccessDeniedException("AccessDenied");
         }
+            //turn it into User
+
         //Race condition Validation
         boolean occupied = appointmentRepository.existsByDoctorAndDateAndTime(
                 safeAppointment.getDoctor(),
