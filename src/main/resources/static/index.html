@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dental Clinic</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .schedule-card {
+            max-width: 650px;
+            margin: 20px auto;
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .slots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .slot-item {
+            padding: 12px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .slot-busy {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+        .slot-free {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+        .dentist-badge {
+            font-size: 15px;
+            color: #2c3e50;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+        }
+        .form-control-select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-container">
+    <!-- LOGIN AND REGISTER CARD -->
+    <div class="auth-card">
+        <h1>Dental Clinic</h1>
+        <p class="subtitle">Access or create your account</p>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('login')">Sign In</button>
+            <button class="tab" onclick="switchTab('register')">Register</button>
+        </div>
+
+        <div id="alert" class="alert" style="display: none;"></div>
+
+        <!-- LOGIN -->
+        <form id="loginForm" class="form active" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="loginEmail" required placeholder="you@email.com">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="loginPassword" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn btn-primary">Sign In</button>
+        </form>
+
+        <!-- REGISTER -->
+        <form id="registerForm" class="form" onsubmit="handleRegister(event)">
+            <div class="form-group">
+                <label>ID / Social Security Number</label>
+                <input type="text" id="regSsn" required>
+            </div>
+            <div class="form-group">
+                <label>First Names</label>
+                <input type="text" id="regFirstNames" required>
+            </div>
+            <div class="form-group">
+                <label>Last Names</label>
+                <input type="text" id="regLastName" required>
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="regEmail" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="regPassword" required minlength="6">
+            </div>
+            <button type="submit" class="btn btn-primary">Create Account</button>
+        </form>
+    </div>
+
+    <!-- PUBLIC APPOINTMENT AVAILABILITY SECTION -->
+    <div class="auth-card schedule-card">
+        <h2>Schedule Availability</h2>
+        <p class="subtitle">Check available appointments in real time</p>
+
+        <div class="form-group">
+            <label>Select a Dentist:</label>
+            <select id="selectDentist" class="form-control-select" onchange="checkAvailability()">
+                <option value="">Loading dentists...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Select a Date:</label>
+            <input type="date" id="consultDate" class="form-control" onchange="checkAvailability()">
+        </div>
+
+        <div id="dentistInfo" class="dentist-badge">
+            Loading dentist information...
+        </div>
+
+        <h3>Office Hours</h3>
+        <div id="slotsContainer" class="slots-grid">
+            <p style="color: #666; grid-column: 1 / -1; text-align: center;">Select a date and a dentist to view available times.</p>
+        </div>
+        <div style="margin-top: 30px; margin-bottom: 20px;">
+            <p style="margin-bottom: 20px;">Sign in or Register to Book an Appointment</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = 'http://localhost:8080';
+
+    // Load dentists and current date upon opening the page
+    document.addEventListener('DOMContentLoaded', async () => {
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('consultDate');
+        if (dateInput) {
+            dateInput.value = today;
+        }
+        await loadDentists();
+    });
+
+    // GET /api/appointments/doctors  →  [{ doctorId, names }]
+    async function loadDentists() {
+        const select = document.getElementById('selectDentist');
+        try {
+            const res = await fetch(`${API}/api/appointments/doctors`);
+            if (!res.ok) throw new Error('Error loading dentists');
+
+            const doctors = await res.json();
+            select.innerHTML = '';
+
+            if (doctors.length === 0) {
+                select.innerHTML = '<option value="">No registered dentists available</option>';
+                return;
+            }
+
+            doctors.forEach(doctor => {
+                const option = document.createElement('option');
+                option.value = doctor.doctorId;
+                option.textContent = doctor.names || `Dentist ID: ${doctor.doctorId}`;
+                select.appendChild(option);
+            });
+
+            // Verify availability with the first one by default
+            checkAvailability();
+
+        } catch (err) {
+            console.error(err);
+            select.innerHTML = '<option value="">Error loading dentists</option>';
+        }
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.form').forEach(f => f.classList.remove('active'));
+
+        if (tab === 'login') {
+            document.querySelectorAll('.tab')[0].classList.add('active');
+            document.getElementById('loginForm').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab')[1].classList.add('active');
+            document.getElementById('registerForm').classList.add('active');
+        }
+        hideAlert();
+    }
+
+    function showAlert(msg, type = 'error') {
+        const el = document.getElementById('alert');
+        el.textContent = msg;
+        el.className = `alert ${type}`;
+        el.style.display = 'block';
+    }
+
+    function hideAlert() {
+        document.getElementById('alert').style.display = 'none';
+    }
+
+    // GET /api/appointments/public/occupied?doctorId=...&date=...
+    async function checkAvailability() {
+        const date = document.getElementById('consultDate').value;
+        const selectDoctor = document.getElementById('selectDentist');
+        const doctorId = selectDoctor.value;
+        const slotsContainer = document.getElementById('slotsContainer');
+        const infoContainer = document.getElementById('dentistInfo');
+
+        if (!date || !doctorId) return;
+
+        // Standard clinic working hours
+        const workingHours = [
+            "09:00:00", "10:00:00", "11:00:00",
+            "12:00:00", "14:00:00", "15:00:00", "16:00:00"
+        ];
+
+        slotsContainer.innerHTML = '<p style="color: #666; grid-column: 1 / -1; text-align: center;">Checking availability...</p>';
+        infoContainer.innerHTML = 'Consulting dentist...';
+
+        try {
+            const res = await fetch(`${API}/api/appointments/public/occupied?doctorId=${doctorId}&date=${date}`);
+
+            if (!res.ok) throw new Error('Error checking appointments');
+
+            const occupiedAppointments = await res.json();
+
+            // Create a Set with the hours that are already booked (field "time")
+            const occupiedHoursSet = new Set(occupiedAppointments.map(c => c.time));
+
+            // Dentist's name
+            const selectedName = selectDoctor.options[selectDoctor.selectedIndex].text;
+            if (occupiedAppointments.length > 0 && occupiedAppointments[0].doctorNames) {
+                infoContainer.innerHTML = `<strong>Dentist:</strong> ${occupiedAppointments[0].doctorNames}`;
+            } else {
+                infoContainer.innerHTML = `<strong>Dentist:</strong> ${selectedName} (No booked appointments for this date)`;
+            }
+
+            slotsContainer.innerHTML = '';
+
+            // Render time slots
+            workingHours.forEach(hour => {
+                const slot = document.createElement('div');
+                const isBusy = occupiedHoursSet.has(hour);
+                const formattedHour = hour.substring(0, 5); // HH:MM
+
+                if (isBusy) {
+                    slot.className = 'slot-item slot-busy';
+                    slot.innerHTML = ` ${formattedHour} <br><span style="font-size: 11px; font-weight: bold;">Busy</span>`;
+                } else {
+                    slot.className = 'slot-item slot-free';
+                    slot.innerHTML = ` ${formattedHour} <br><span style="font-size: 11px; font-weight: bold;">Available</span>`;
+                }
+
+                slotsContainer.appendChild(slot);
+            });
+
+        } catch (err) {
+            console.error(err);
+            slotsContainer.innerHTML = '<p style="color: red; grid-column: 1 / -1; text-align: center;">Could not connect to the server.</p>';
+            infoContainer.innerHTML = `<strong style="color: red;">Error connecting to API</strong>`;
+        }
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        hideAlert();
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        try {
+            const res = await fetch(`${API}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // important for session
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                showAlert(data.message || data.error || 'Error signing in');
+                return;
+            }
+
+            localStorage.setItem('user', JSON.stringify(data));
+
+            // Roles: PATIENT, DOCTOR, ADMIN
+            if (data.role === 'DOCTOR' || data.role === 'ADMIN') {
+                window.location.href = 'doctor.html';
+            } else {
+                window.location.href = 'dashboard.html';
+            }
+        } catch (err) {
+            showAlert('Could not connect to the server');
+        }
+    }
+
+    async function handleRegister(e) {
+        e.preventDefault();
+        hideAlert();
+
+        // Mapping to the properties expected by the backend DTO
+        const body = {
+            socialsecuritynumber: document.getElementById('regSsn').value,
+            firstnames: document.getElementById('regFirstNames').value,
+            surname: document.getElementById('regLastName').value,
+            email: document.getElementById('regEmail').value,
+            password: document.getElementById('regPassword').value
+        };
+
+        try {
+            const res = await fetch(`${API}/api/auth/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                showAlert(data.message || data.error || 'Error registering');
+                return;
+            }
+
+            showAlert('Account created successfully! You can now sign in', 'success');
+            setTimeout(() => switchTab('login'), 1500);
+        } catch (err) {
+            showAlert('Could not connect to the server');
+        }
+    }
+</script>
+</body>
+</html>
