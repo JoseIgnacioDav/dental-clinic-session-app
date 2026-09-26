@@ -329,8 +329,13 @@
 
             const data = await res.json();
 
-            if (!res.ok) {
-                showAlert(data.message || data.error || 'Error registering');
+            if (!res.ok) {   // now it shows a detailed message of what failed
+                if (data.fields) {
+                    const messages = Object.values(data.fields).join('\n');
+                    showAlert(messages);
+                } else {
+                    showAlert(data.error || data.message || 'Error registering');
+                }
                 return;
             }
 
