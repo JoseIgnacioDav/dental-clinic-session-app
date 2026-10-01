@@ -9,7 +9,7 @@ public class WebappApplication {
 
 	public static void main(String[] args) {
 		// I manage the .env files before spring boots
-		Dotenv dotenv = Dotenv.configure().load();
+		Dotenv dotenv = Dotenv.configure().ignoreIfMissing().load();
 		dotenv.entries().forEach(entry ->
 				System.setProperty(entry.getKey(), entry.getValue()));
 		SpringApplication.run(WebappApplication.class, args);
